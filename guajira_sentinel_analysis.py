@@ -94,11 +94,12 @@ if __name__ == "__main__":
     projection = sentineldat.GetProjection()
 
     tcoords = latlon_to_pixel(wells[:, :2], gt)
+    pixelDF = pd.DataFrame(tcoords, columns=["x", "y"])
 
     bands_data = extract_bands_data(gt, tcoords)
 
     bandsdf = pd.DataFrame(bands_data, columns=meta["properties"]["band_order"])
-    newDf = pd.concat([wellsdf, bandsdf], axis=1)
+    newDf = pd.concat([wellsdf, pixelDF, bandsdf], axis=1)
 
     newDf.to_csv("guajira_wells_sentinel_data.csv", index=False)
 
