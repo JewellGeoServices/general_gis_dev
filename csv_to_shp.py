@@ -30,7 +30,7 @@ def transform_coordinates(easting, northing):
 def filter_out_origin_points(df, tolerance):
 
     df['LONGITUDE'], df['LATITUDE'] = zip(*df.apply(lambda row: transform_coordinates(row['EASTING'], row['NORTHING']), axis=1))
-    mask = ~((abs(df['LONGITUDE']) < tolerance) & (abs(df['LATITUDE']) < tolerance))
+    mask = ~ (abs(df['LATITUDE']) < tolerance)
     filtered_df = df[mask]
 
     return filtered_df
@@ -47,9 +47,17 @@ def combine_to_shp(csv_folder, shapefile_path, label_filter=""):
     combined_dfs = []
     csv_files = [os.path.join(csv_folder, file) for file in os.listdir(csv_folder) if file.endswith('.csv')]
 
+    # csv_files.remove(r'Z:\\Shared\\ActiveProjects\\25772 - Aoulouz Dam - Morocco - 2025\\03 - Field Data\\3- Culture etc\\Aoulouz Dam - Morocco__25772 - Aoulouz Dam - Morocco__wst\\combined_csv_files.csv')
+
+
     # combined_df = pd.concat([pd.read_csv(file) for file in csv_files], ignore_index=True)
     for file in csv_files:
+
+        if "combined" in file:
+            continue
+
         df = pd.read_csv(file)
+        df["ELEV"] = pd.to_numeric(df["ELEV"], errors='coerce')
         filtered = filter_out_origin_points(df, tolerance=0.00001)
 
         if filtered.empty:
@@ -71,7 +79,7 @@ def combine_to_shp(csv_folder, shapefile_path, label_filter=""):
 if __name__ == "__main__":
 
     source_folder = r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\03 - Field Data\3- Culture etc\Aoulouz Dam - Morocco__25772 - Aoulouz Dam - Morocco__wst"
-    write_file = r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\06 - GIS\1 Vectors\2- Culture\CULTURE MEGAFILE.shp"
+    write_file = r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\06 - GIS\1 Vectors\2- Culture\combined_culture.shp"
     label_filter = "Culture_no-device_ncastioni_2025-06-17_"
 
     combine_to_shp(source_folder, write_file, label_filter=label_filter)
