@@ -1,21 +1,36 @@
 import pandas as pd
 import geopandas as gpd
-from shapely.geometry import Point
 import pyproj
 import os
+import re
+from shapely.geometry import Point
+
+MOROCCO_CRS = "EPSG:32629" # UTM Zone 29N
+UKW_CRS = "EPSG:32630" # UTM Zone 30N
+UKE_CRS = "EPSG:32629"  # UTM Zone 29N
 
 def csv_to_shapefile(csv_file, shapefile_path):
     # Read the CSV file into a DataFrame
     df = pd.read_csv(csv_file)
 
-    # Create a geometry column from EASTING and NORTHING
-    geometry = [Point(xy) for xy in zip(df['EASTING'], df['NORTHING'])]
+    df["Z"] = pd.to_numeric(df["ELEV"], errors='coerce')
+    filtered = filter_out_origin_points(df, tolerance=0.00001)
 
-    # Set the Geometry column in your GeoDataFrame
-    gdf = gpd.GeoDataFrame(df, crs="EPSG:32629", geometry=geometry)
+    df["geometry"] = [Point(xy) for xy in zip(df['EASTING'], df['NORTHING'])]
 
-    # Save the GeoDataFrame to a Shapefile
+    gdf = gpd.GeoDataFrame(df, crs=UKW_CRS, geometry='geometry')
+
     gdf.to_file(shapefile_path, driver='ESRI Shapefile')
+
+    # # Create a geometry column from EASTING and NORTHING
+    # geometry = [Point(xy) for xy in zip(df['EASTING'], df['NORTHING'])]
+    #
+    # # Set the Geometry column in your GeoDataFrame
+    # # gdf = gpd.GeoDataFrame(df, crs="EPSG:32629", geometry=geometry)
+    # gdf = gpd.GeoDataFrame(df, crs=UKW_CRS, geometry=geometry)
+    #
+    # # Save the GeoDataFrame to a Shapefile
+    # gdf.to_file(shapefile_path, driver='ESRI Shapefile')
 
 def transform_coordinates(easting, northing):
     # Assuming the input CRS is UTM Zone 33N (EPSG:32633)
@@ -75,14 +90,41 @@ def combine_to_shp(csv_folder, shapefile_path, label_filter=""):
 
     gdf.to_file(shapefile_path, driver='ESRI Shapefile')
 
+def convert_to_indv_shps(folder_name, write_folder, label_type = "wire"):
+
+    files = [f for f in os.listdir(folder_name) if f.endswith('.csv')]
+
+    for file in files:
+
+        csv_file_path = os.path.join(folder_name, file)
+        file_name = file.replace(".csv", ".shp")
+        shapefile_output_path = os.path.join(write_folder, file_name)
+
+        csv_to_shapefile(csv_file_path, shapefile_output_path)
+        print(f"Converted {file} to {file_name}")
+
+
 
 if __name__ == "__main__":
 
-    source_folder = r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\03 - Field Data\3- Culture etc\Aoulouz Dam - Morocco__25772 - Aoulouz Dam - Morocco__wst"
-    write_file = r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\06 - GIS\1 Vectors\2- Culture\combined_culture.shp"
-    label_filter = "Culture_no-device_ncastioni_2025-06-17_"
+    point = r"E:\JGS\Willowstick\Processing\25789 - Watertech - Thames -Knight&Bessborough Reservoir - COMPARE - 2025\Willowstick UK__25789 - Knight&Bessborough Reservoir - COMPARE - Group 1__wst\02- _Electrode_Geode 383553_greg-tickner_2025-07-17_.csv"
+    write = r"E:\JGS\Willowstick\Processing\electrode_02"
 
-    combine_to_shp(source_folder, write_file, label_filter=label_filter)
+    csv_to_shapefile(point, write)
+
+    # source_folder = r"E:\JGS\Willowstick\Processing\25789 - Watertech - Thames -Knight&Bessborough Reservoir - COMPARE - 2025\Willowstick UK__25789 - Knight&Bessborough Reservoir - COMPARE - Group 1__wst\Wire"
+    # write_folder = r"E:\JGS\Willowstick\Processing\25789 - Watertech - Thames -Knight&Bessborough Reservoir - COMPARE - 2025\Converted Files"
+    label = "wire"
+
+    # convert_to_indv_shps(source_folder, write_folder, label_type=label)
+
+    # source_folder = r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\03 - Field Data\3- Culture etc\Aoulouz Dam - Morocco__25772 - Aoulouz Dam - Morocco__wst"
+    # write_file = r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\06 - GIS\1 Vectors\2- Culture\combined_culture.shp"
+    # label_filter = "Culture_no-device_ncastioni_2025-06-17_"
+
+
+
+    # combine_to_shp(source_folder, write_file, label_filter=label_filter)
 
     # for file in os.listdir(r"Z:\Shared\ActiveProjects\25772 - Aoulouz Dam - Morocco - 2025\03 - Field Data\3- Culture etc\Aoulouz Dam - Morocco__25772 - Aoulouz Dam - Morocco__wst"):
     #     if file.endswith(".csv"):
